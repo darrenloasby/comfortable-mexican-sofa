@@ -8,7 +8,7 @@ class CmsAdmin::FilesController < CmsAdmin::BaseController
   def index
     @files = @site.files.includes(:categories).for_category(params[:category]).order('cms_files.position')
     
-    if params.permit(:ajax)
+    if params[:ajax]
       files = @files.images.collect do |file|
         { :thumb  => file.file.url(:cms_thumb),
           :image  => file.file.url }
@@ -26,18 +26,18 @@ class CmsAdmin::FilesController < CmsAdmin::BaseController
   def create
     @files = []
     
-    # Sometimes params.permit(:file) comes in as a single file object
-    unless params.permit(:file).is_a?(Hash)
-      uploaded_file = params.permit(:file)
-      params.permit(:file) = { }
-      params.permit(:file)[:file] = [uploaded_file]
+    # Sometimes params[:file] comes in as a single file object
+    unless params[:file].is_a?(Hash)
+      uploaded_file = params[:file]
+      params[:file] = { }
+      params[:file][:file] = [uploaded_file]
     end
     
-    file_array  = params.permit(:file)[:file] || [nil]
-    label       = params.permit(:file)[:label]
+    file_array  = params[:file][:file] || [nil]
+    label       = params[:file][:label]
         
     file_array.each_with_index do |file, i|
-      file_params = params.permit(:file).merge(:file => file)
+      file_params = params[:file].merge(:file => file)
       if file_array.size > 1 && file_params[:label].present?
         label = file_params[:label] + " #{i + 1}"
       end
@@ -45,7 +45,7 @@ class CmsAdmin::FilesController < CmsAdmin::BaseController
       @files << @file
     end
     
-    if params.permit(:ajax)
+    if params[:ajax]
       view = render_to_string(:partial => 'cms_admin/files/file', :collection => @files, :layout => false)
       render :json => {:filelink => @file.file.url, :view => view.gsub("\n", '')}
     else
@@ -55,7 +55,7 @@ class CmsAdmin::FilesController < CmsAdmin::BaseController
     
   rescue ActiveRecord::RecordInvalid
     logger.detailed_error($!)
-    if params.permit(:ajax)
+    if params[:ajax]
       render :nothing => true, :status => :unprocessable_entity
     else
       flash.now[:error] = I18n.t('cms.files.creation_failure')
@@ -64,7 +64,7 @@ class CmsAdmin::FilesController < CmsAdmin::BaseController
   end
   
   def update
-    @file.update_attributes!(params.permit(:file))
+    @file.update_attributes!(params[:file])
     flash[:success] = I18n.t('cms.files.updated')
     redirect_to :action => :edit, :id => @file
   rescue ActiveRecord::RecordInvalid
